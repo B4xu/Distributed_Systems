@@ -1,0 +1,6 @@
+[2026-03-16 02:01:26] Server started on 0.0.0.0:5000
+[2026-03-16 02:02:05] [+] 'irakli' connected from ('192.168.0.113', 49580) | humans: 1  load: 0
+[2026-03-16 02:02:09] irakli: hey
+[2026-03-16 02:02:12] irakli: wasap
+[2026-03-16 02:02:16] [-] 'irakli' disconnected | humans: 0  load: 0
+[2026-03-16 02:02:17] Server shutting down.
