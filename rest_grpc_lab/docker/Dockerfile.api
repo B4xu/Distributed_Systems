@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY api_service /app/api_service
+COPY proto /app/proto
+
+RUN python -m grpc_tools.protoc -I./proto --python_out=./api_service --grpc_python_out=./api_service ./proto/catalog.proto
+RUN python -m grpc_tools.protoc -I./proto --python_out=. --grpc_python_out=. ./proto/catalog.proto
+
+ENV CATALOG_GRPC_TARGET=catalog-service:50051
+
+CMD ["uvicorn", "api_service.main:app", "--host", "0.0.0.0", "--port", "8000"]

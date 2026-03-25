@@ -1,0 +1,14 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY catalog_service /app/catalog_service
+COPY proto /app/proto
+COPY scripts /app/scripts
+
+RUN python -m grpc_tools.protoc -I./proto --python_out=./catalog_service --grpc_python_out=./catalog_service ./proto/catalog.proto
+
+CMD ["python", "catalog_service/server.py"]
