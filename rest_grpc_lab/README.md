@@ -238,36 +238,33 @@ Good luck! This challenge will test your understanding of microservices, API des
 Swagger docs:
 - `http://<machine-b-ip>:8000/docs`
 
-## 6. საკლასო დემოს სცენარი
+## 6. Class Demo
 
-### სცენარი A — ყველაფერი მუშაობს
-1. Machine A-ზე გაუშვით catalog-service
-2. Machine B-ზე გაუშვით REST API
-3. ბრაუზერიდან ან curl-ით გამოიძახეთ:
+### Scenario A — Everything works
+1. Start catalog service in one container/process
+2. Start REST API service in another container/process
+3. By typing curl in terminal or viewing API endpoint in browser:
    - `GET /books`
    - `POST /books`
    - `GET /books/{id}`
 
-### სცენარი B — partial failure
-1. Machine B-ზე REST API დატოვეთ გაშვებული
-2. Machine A-ზე catalog-service გააჩერეთ
-3. ისევ გამოიძახეთ `GET /books`
+### Scenario B — partial failure
+1. Leave REST API container/process running
+2. Stop Catalog-service container/process
+3.  Try fetching `GET /books`
+Result:
+- REST API runs without catalog-service being active
+- dependency is dead
+- You will get `503 Service Unavailable`
 
-შედეგი:
-- REST API ცოცხალია
-- dependency მკვდარია
-- მიიღებთ `503 Service Unavailable`
-
-ეს ძალიან კარგი დემოა distributed systems-ისთვის.
-
-### სცენარი C — latency / timeout
-`catalog_service/server.py`-ში შეგიძლიათ დროებით ჩასვათ delay.
-ამით აჩვენებთ:
+### Scenario C — latency / timeout
+You can implement random time-delay in `catalog_service/server.py`.
+With this method you will:
 - network timeout
 - remote dependency latency
-- რატომ არ არის remote call იგივე local function call
+- Why remote call is not same as local function call
 
-## 7. სწრაფი ტესტები curl-ით
+## 7. Tests with curl
 
 ```bash
 curl http://localhost:8000/health
@@ -278,16 +275,16 @@ curl http://localhost:8000/books/1
 
 ## 8. Docker demo
 
-`docker-compose.yml` single-machine ვარიანტისთვისაა. ორი კომპიუტერის LAN დემოსთვის ჯობს პროცესები ცალ-ცალკე გაუშვათ.
+`docker-compose.yml` is for single machine use. Docker will create its own network on host 3 containers each containing: Database, REST API, gRPC respectively.
 
 ```bash
 docker compose up --build
 ```
 
-ამის შემდეგ REST service ხელმისაწვდომი იქნება:
+After this operation the service will be available on:
 - `http://localhost:8000/docs`
 
-## 9. რა აჩვენოს ამ დემომ სტუდენტებს
+## 9. What we saw making this lab:
 
 - API contract vs implementation
 - REST vs gRPC
@@ -297,9 +294,8 @@ docker compose up --build
 - timeout handling
 - why distributed systems are different from local software
 
-## 10. შესაძლო გაფართოება
-
-შემდეგ ვერსიაში შეგიძლიათ დაამატოთ:
+## 10. Possible scale-up
+### Implement:
 - retries
 - request IDs
 - structured JSON logs
