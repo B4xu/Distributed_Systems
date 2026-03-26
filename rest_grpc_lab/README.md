@@ -273,6 +273,28 @@ curl -X POST http://localhost:8000/books -H "Content-Type: application/json" -d 
 curl http://localhost:8000/books/1
 ```
 
+## 7.1. Direct gRPC Testing with grpcurl
+
+Since gRPC uses binary framing (HTTP/2), it cannot be tested in a browser. Use `grpcurl` to call the gRPC service directly on port `50051`.
+
+> **Note:** The server does not expose gRPC reflection, so pass `-proto proto/catalog.proto` explicitly. Run all commands from the project root.
+
+```bash
+# Health check
+grpcurl -plaintext -proto proto/catalog.proto localhost:50051 catalog.CatalogService/Health
+
+# List all books
+grpcurl -plaintext -proto proto/catalog.proto localhost:50051 catalog.CatalogService/ListBooks
+
+# Get a book by ID
+grpcurl -plaintext -proto proto/catalog.proto -d '{"id": 1}' localhost:50051 catalog.CatalogService/GetBook
+
+# Create a new book
+grpcurl -plaintext -proto proto/catalog.proto \
+  -d '{"title": "Distributed Systems Patterns", "author": "Demo Author", "year": 2026}' \
+  localhost:50051 catalog.CatalogService/CreateBook
+```
+
 ## 8. Docker demo
 
 `docker-compose.yml` is for single machine use. Docker will create its own network on host 3 containers each containing: Database, REST API, gRPC respectively.
