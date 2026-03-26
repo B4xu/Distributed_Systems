@@ -274,9 +274,15 @@ curl http://localhost:8000/books/1
 ```
 
 ## 7.1. Direct gRPC Testing with grpcurl
-
 Since gRPC uses binary framing (HTTP/2), it cannot be tested in a browser. Use `grpcurl` to call the gRPC service directly on port `50051`.
 
+### Install grpcurl
+
+```bash
+curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.7/grpcurl_1.8.7_linux_x86_64.tar.gz" | sudo tar -xz -C /usr/local/bin
+```
+
+> **Note:**
 > **Note:** The server does not expose gRPC reflection, so pass `-proto proto/catalog.proto` explicitly. Run all commands from the project root.
 
 ```bash
