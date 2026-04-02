@@ -68,8 +68,7 @@ The generic event implementation is in `vector_clock_generic.cpp`.
 - Build: `g++ -std=c++17 -pthread vector_clock_generic.cpp -o vector_clock_generic`
 - Run vector clock mode: `./vector_clock_generic --mode=vector --nodes=8 --steps=30 --send-chance=40`
 - Run Lamport mode: `./vector_clock_generic --mode=lamport --nodes=8 --steps=30 --send-chance=40`
-
-For reproducibility add `--seed=<integer>` (not currently implemented, but can be added as an extension).
+- Reproducible run with fixed seed: `./vector_clock_generic --mode=vector --nodes=8 --steps=30 --send-chance=40 --seed=1234`
 
 > This structured README is now a class-friendly, 3-section assignment: Concept, Implementation, Evaluation.</content>
 <parameter name="filePath">/home/irakli/Desktop/Distributed_Systems/Vector_Clocks/README.md

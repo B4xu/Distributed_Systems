@@ -77,17 +77,36 @@ int main(int argc, char *argv[]) {
     int steps = 30;
     int send_chance = 40; // percentage
     string mode = "vector";
+    mt19937 rng((unsigned)chrono::high_resolution_clock::now().time_since_epoch().count());
 
     for (int i = 1; i < argc; i++) {
         string arg = argv[i];
-        if (arg.rfind("--mode=", 0) == 0) {
-            mode = arg.substr(7);
-        } else if (arg.rfind("--nodes=", 0) == 0) {
-            num_nodes = stoi(arg.substr(8));
-        } else if (arg.rfind("--steps=", 0) == 0) {
-            steps = stoi(arg.substr(8));
-        } else if (arg.rfind("--send-chance=", 0) == 0) {
-            send_chance = stoi(arg.substr(13));
+        try {
+            if (arg.rfind("--mode=", 0) == 0) {
+                mode = arg.substr(7);
+            } else if (arg.rfind("--nodes=", 0) == 0) {
+                string value = arg.substr(8);
+                if (value.empty()) throw invalid_argument("--nodes value missing");
+                num_nodes = stoi(value);
+            } else if (arg.rfind("--steps=", 0) == 0) {
+                string value = arg.substr(8);
+                if (value.empty()) throw invalid_argument("--steps value missing");
+                steps = stoi(value);
+            } else if (arg.rfind("--send-chance=", 0) == 0) {
+                string value = arg.substr(14);
+                if (value.empty()) throw invalid_argument("--send-chance value missing");
+                send_chance = stoi(value);
+            } else if (arg.rfind("--seed=", 0) == 0) {
+                string value = arg.substr(7);
+                if (value.empty()) throw invalid_argument("--seed value missing");
+                unsigned seed = static_cast<unsigned>(stoul(value));
+                rng.seed(seed);
+            } else {
+                cerr << "Warning: unknown argument ignored: " << arg << "\n";
+            }
+        } catch (const exception &e) {
+            cerr << "Error parsing argument '" << arg << "': " << e.what() << "\n";
+            return 1;
         }
     }
 
@@ -96,7 +115,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    mt19937 rng((unsigned)chrono::high_resolution_clock::now().time_since_epoch().count());
     uniform_int_distribution<int> node_dist(0, num_nodes - 1);
     uniform_int_distribution<int> chance_dist(1, 100);
 
