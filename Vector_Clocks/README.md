@@ -31,9 +31,11 @@ Compile and run the vector clock simulation and observe behavior.
 1. Compile the code:
    - `g++ -std=c++14 -pthread vector_clock.cpp -o vector_clock`
 2. Run the simulation:
-   - `./vector_clock`
+   - Vector mode: `./vector_clock --mode=vector --map=6 --reduce=3`
+   - Lamport mode: `./vector_clock --mode=lamport --map=6 --reduce=3`
 3. Identify phases in output:
-   - `MAP PHASE`, `SHUFFLE PHASE`, `REDUCE PHASE`
+   - Vector: `MAP PHASE`, `SHUFFLE PHASE`, `REDUCE PHASE`
+   - Lamport: `MAP PHASE (Lamport)`, `SHUFFLE PHASE (Lamport)`, `REDUCE PHASE (Lamport)`
 4. For one map-reduce message, verify:
    - Sender clock before send
    - Receiver merges and updates correctly

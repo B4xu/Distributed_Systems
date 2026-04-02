@@ -13,7 +13,10 @@
 
 using namespace std;
 
-#define SIZE 10
+static int NUM_MAP_NODES = 6;
+static int NUM_REDUCE_NODES = 3;
+static int NUM_NODES = NUM_MAP_NODES + NUM_REDUCE_NODES;
+static bool USE_LAMPORT = false;
 
 struct Message {
     vector<int> clock;
@@ -31,8 +34,8 @@ class node {
         thread node_thread;
         static mutex send_mutex;
 
-        node(int id) : id(id), running(true) {
-            clock.resize(SIZE, 0);
+        node(int id, int total_nodes) : id(id), running(true) {
+            clock.resize(total_nodes, 0);
             node_thread = thread(&node::run, this);
         }
 
@@ -80,7 +83,8 @@ class node {
         }
 
         void receive(const vector<int> &sender_clock) {
-            for (int i = 0; i < SIZE; i++) {
+            int n = static_cast<int>(clock.size());
+            for (int i = 0; i < n; i++) {
                 clock[i] = max(clock[i], sender_clock[i]);
             }
             clock[id]++;
@@ -88,7 +92,8 @@ class node {
 
         void print_clock() {
             cout << "Node " << id << ": ";
-            for (int i = 0; i < SIZE; i++) {
+            int n = static_cast<int>(clock.size());
+            for (int i = 0; i < n; i++) {
                 cout << clock[i] << " ";
             }
             cout << "\n";
@@ -97,66 +102,148 @@ class node {
 
 mutex node::send_mutex;
 
-int main() {
-    srand(time(NULL)); // Seed for random delays
-
-    const int numMap = 6;
-    const int numReduce = 3;
-    const int numNodes = numMap + numReduce;
-
-    vector<unique_ptr<node>> nodes;
-    for (int i = 0; i < numNodes; i++) {
-        nodes.emplace_back(make_unique<node>(i));
-    }
-
-    mt19937 rng((unsigned)chrono::high_resolution_clock::now().time_since_epoch().count());
+void run_map_phase(vector<unique_ptr<node>> &nodes, mt19937 &rng) {
     uniform_int_distribution<int> map_work(1, 4);
-    uniform_int_distribution<int> reduce_work(2, 5);
-    uniform_int_distribution<int> reduce_target(0, numReduce - 1);
-
     cout << "=== MAP PHASE ===\n";
-    for (int i = 0; i < numMap; i++) {
+    for (int i = 0; i < NUM_MAP_NODES; i++) {
         int events = map_work(rng);
         cout << "Map node " << i << " performs " << events << " local events\n";
         for (int k = 0; k < events; k++) {
             nodes[i]->local_event();
         }
     }
+}
 
+void run_shuffle_phase(vector<unique_ptr<node>> &nodes) {
     cout << "=== SHUFFLE PHASE ===\n";
-    for (int i = 0; i < numMap; i++) {
-        int target = (i % numReduce) + numMap;
+    for (int i = 0; i < NUM_MAP_NODES; i++) {
+        int target = (i % NUM_REDUCE_NODES) + NUM_MAP_NODES;
         nodes[i]->send(*nodes[target], "shuffle");
     }
-
-    // Wait for all messages to be processed
+    // Give time for asynchronous delivery to be processed
     this_thread::sleep_for(chrono::seconds(2));
+}
 
+struct LamportNode {
+    int id;
+    int clock;
+    LamportNode(int id) : id(id), clock(0) {}
+
+    void local_event() {
+        clock++;
+    }
+
+    int send() {
+        clock++;
+        return clock;
+    }
+
+    void receive(int incoming) {
+        clock = max(clock, incoming) + 1;
+    }
+};
+
+void run_lamport_phase(vector<LamportNode> &nodes, mt19937 &rng) {
+    uniform_int_distribution<int> map_work(1, 4);
+    uniform_int_distribution<int> reduce_work(2, 5);
+
+    cout << "=== MAP PHASE (Lamport) ===\n";
+    for (int i = 0; i < NUM_MAP_NODES; i++) {
+        int events = map_work(rng);
+        cout << "Map node " << i << " performs " << events << " local events\n";
+        for (int k = 0; k < events; k++) {
+            nodes[i].local_event();
+        }
+    }
+
+    cout << "=== SHUFFLE PHASE (Lamport) ===\n";
+    for (int i = 0; i < NUM_MAP_NODES; i++) {
+        int target = (i % NUM_REDUCE_NODES) + NUM_MAP_NODES;
+        int timestamp = nodes[i].send();
+        nodes[target].receive(timestamp);
+        cout << "[SEND shuffle] Node " << i << " -> Node " << target << " @" << timestamp << "\n";
+        cout << "[RECV] Node " << target << " received from Node " << i << "\n";
+    }
+
+    cout << "=== REDUCE PHASE (Lamport) ===\n";
+    for (int i = 0; i < NUM_REDUCE_NODES; i++) {
+        int idx = NUM_MAP_NODES + i;
+        int events = reduce_work(rng);
+        cout << "Reduce node " << idx << " performs " << events << " local events\n";
+        for (int k = 0; k < events; k++) {
+            nodes[idx].local_event();
+        }
+    }
+
+    cout << "=== FINAL LAMPORT CLOCKS ===\n";
+    for (int i = 0; i < NUM_NODES; i++) {
+        cout << "Node " << i << ": " << nodes[i].clock << "\n";
+    }
+}
+
+void run_reduce_phase(vector<unique_ptr<node>> &nodes, mt19937 &rng) {
+    uniform_int_distribution<int> reduce_work(2, 5);
     cout << "=== REDUCE PHASE ===\n";
-    for (int i = 0; i < numReduce; i++) {
-        int idx = numMap + i;
+    for (int i = 0; i < NUM_REDUCE_NODES; i++) {
+        int idx = NUM_MAP_NODES + i;
         int events = reduce_work(rng);
         cout << "Reduce node " << idx << " performs " << events << " local events\n";
         for (int k = 0; k < events; k++) {
             nodes[idx]->local_event();
         }
     }
+}
 
-    // Stop all threads
-    for (auto& n : nodes) {
+int main(int argc, char *argv[]) {
+    // Command line: --mode=vector|lamport --map=N --reduce=M
+    for (int i = 1; i < argc; i++) {
+        string arg = argv[i];
+        if (arg.rfind("--mode=", 0) == 0) {
+            string mode = arg.substr(7);
+            USE_LAMPORT = (mode == "lamport");
+        } else if (arg.rfind("--map=", 0) == 0) {
+            NUM_MAP_NODES = stoi(arg.substr(6));
+        } else if (arg.rfind("--reduce=", 0) == 0) {
+            NUM_REDUCE_NODES = stoi(arg.substr(9));
+        }
+    }
+    NUM_NODES = NUM_MAP_NODES + NUM_REDUCE_NODES;
+
+    srand((unsigned)time(NULL)); // Seed for random delays
+    mt19937 rng((unsigned)chrono::high_resolution_clock::now().time_since_epoch().count());
+
+    if (USE_LAMPORT) {
+        vector<LamportNode> nodes;
+        for (int i = 0; i < NUM_NODES; i++) {
+            nodes.emplace_back(i);
+        }
+        run_lamport_phase(nodes, rng);
+        return 0;
+    }
+
+    vector<unique_ptr<node>> nodes;
+    for (int i = 0; i < NUM_NODES; i++) {
+        nodes.emplace_back(make_unique<node>(i, NUM_NODES));
+    }
+
+    run_map_phase(nodes, rng);
+    run_shuffle_phase(nodes);
+    run_reduce_phase(nodes, rng);
+
+    // Stop and join all threads cleanly
+    for (auto &n : nodes) {
         n->running = false;
         n->queue_cv.notify_one();
     }
-
-    // Join threads
-    for (auto& n : nodes) {
-        n->node_thread.join();
+    for (auto &n : nodes) {
+        if (n->node_thread.joinable()) {
+            n->node_thread.join();
+        }
     }
 
     cout << "=== FINAL VECTOR CLOCKS ===\n";
-    for (int i = 0; i < numNodes; i++) {
+    for (int i = 0; i < NUM_NODES; i++) {
         nodes[i]->print_clock();
     }
-
     return 0;
 }
