@@ -10,6 +10,8 @@
 #include <memory>
 #include <cstdlib>
 #include <ctime>
+#include <sstream>
+#include <iomanip>
 
 using namespace std;
 
@@ -17,6 +19,15 @@ static int NUM_MAP_NODES = 6;
 static int NUM_REDUCE_NODES = 3;
 static int NUM_NODES = NUM_MAP_NODES + NUM_REDUCE_NODES;
 static bool USE_LAMPORT = false;
+
+string get_timestamp() {
+    auto now = chrono::system_clock::now();
+    auto time_t = chrono::system_clock::to_time_t(now);
+    auto ms = chrono::duration_cast<chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    stringstream ss;
+    ss << put_time(localtime(&time_t), "%H:%M:%S") << "." << setfill('0') << setw(3) << ms.count();
+    return ss.str();
+}
 
 struct Message {
     vector<int> clock;
@@ -56,7 +67,7 @@ class node {
 
                 // Process received message
                 receive(msg.clock);
-                cout << "[RECV] Node " << id << " received from Node " << msg.sender_id << "\n";
+                cout << "[" << get_timestamp() << "] [RECV] Node " << id << " received from Node " << msg.sender_id << "\n";
             }
         }
 
@@ -76,7 +87,7 @@ class node {
             }
             receiver.queue_cv.notify_one();
             if (!tag.empty()) {
-                cout << "[SEND " << tag << "] Node " << id << " -> Node " << receiver.id << "\n";
+                cout << "[" << get_timestamp() << "] [SEND " << tag << "] Node " << id << " -> Node " << receiver.id << "\n";
             }
             // Simulate network delay
             this_thread::sleep_for(chrono::milliseconds(rand() % 50 + 10));
@@ -104,10 +115,10 @@ mutex node::send_mutex;
 
 void run_map_phase(vector<unique_ptr<node>> &nodes, mt19937 &rng) {
     uniform_int_distribution<int> map_work(1, 4);
-    cout << "=== MAP PHASE ===\n";
+    cout << "[" << get_timestamp() << "] === MAP PHASE ===\n";
     for (int i = 0; i < NUM_MAP_NODES; i++) {
         int events = map_work(rng);
-        cout << "Map node " << i << " performs " << events << " local events\n";
+        cout << "[" << get_timestamp() << "] Map node " << i << " performs " << events << " local events\n";
         for (int k = 0; k < events; k++) {
             nodes[i]->local_event();
         }
@@ -115,7 +126,7 @@ void run_map_phase(vector<unique_ptr<node>> &nodes, mt19937 &rng) {
 }
 
 void run_shuffle_phase(vector<unique_ptr<node>> &nodes) {
-    cout << "=== SHUFFLE PHASE ===\n";
+    cout << "[" << get_timestamp() << "] === SHUFFLE PHASE ===\n";
     for (int i = 0; i < NUM_MAP_NODES; i++) {
         int target = (i % NUM_REDUCE_NODES) + NUM_MAP_NODES;
         nodes[i]->send(*nodes[target], "shuffle");
@@ -147,47 +158,47 @@ void run_lamport_phase(vector<LamportNode> &nodes, mt19937 &rng) {
     uniform_int_distribution<int> map_work(1, 4);
     uniform_int_distribution<int> reduce_work(2, 5);
 
-    cout << "=== MAP PHASE (Lamport) ===\n";
+    cout << "[" << get_timestamp() << "] === MAP PHASE (Lamport) ===\n";
     for (int i = 0; i < NUM_MAP_NODES; i++) {
         int events = map_work(rng);
-        cout << "Map node " << i << " performs " << events << " local events\n";
+        cout << "[" << get_timestamp() << "] Map node " << i << " performs " << events << " local events\n";
         for (int k = 0; k < events; k++) {
             nodes[i].local_event();
         }
     }
 
-    cout << "=== SHUFFLE PHASE (Lamport) ===\n";
+    cout << "[" << get_timestamp() << "] === SHUFFLE PHASE (Lamport) ===\n";
     for (int i = 0; i < NUM_MAP_NODES; i++) {
         int target = (i % NUM_REDUCE_NODES) + NUM_MAP_NODES;
         int timestamp = nodes[i].send();
         nodes[target].receive(timestamp);
-        cout << "[SEND shuffle] Node " << i << " -> Node " << target << " @" << timestamp << "\n";
-        cout << "[RECV] Node " << target << " received from Node " << i << "\n";
+        cout << "[" << get_timestamp() << "] [SEND shuffle] Node " << i << " -> Node " << target << " @" << timestamp << "\n";
+        cout << "[" << get_timestamp() << "] [RECV] Node " << target << " received from Node " << i << "\n";
     }
 
-    cout << "=== REDUCE PHASE (Lamport) ===\n";
+    cout << "[" << get_timestamp() << "] === REDUCE PHASE (Lamport) ===\n";
     for (int i = 0; i < NUM_REDUCE_NODES; i++) {
         int idx = NUM_MAP_NODES + i;
         int events = reduce_work(rng);
-        cout << "Reduce node " << idx << " performs " << events << " local events\n";
+        cout << "[" << get_timestamp() << "] Reduce node " << idx << " performs " << events << " local events\n";
         for (int k = 0; k < events; k++) {
             nodes[idx].local_event();
         }
     }
 
-    cout << "=== FINAL LAMPORT CLOCKS ===\n";
+    cout << "[" << get_timestamp() << "] === FINAL LAMPORT CLOCKS ===\n";
     for (int i = 0; i < NUM_NODES; i++) {
-        cout << "Node " << i << ": " << nodes[i].clock << "\n";
+        cout << "[" << get_timestamp() << "] Node " << i << ": " << nodes[i].clock << "\n";
     }
 }
 
 void run_reduce_phase(vector<unique_ptr<node>> &nodes, mt19937 &rng) {
     uniform_int_distribution<int> reduce_work(2, 5);
-    cout << "=== REDUCE PHASE ===\n";
+    cout << "[" << get_timestamp() << "] === REDUCE PHASE ===\n";
     for (int i = 0; i < NUM_REDUCE_NODES; i++) {
         int idx = NUM_MAP_NODES + i;
         int events = reduce_work(rng);
-        cout << "Reduce node " << idx << " performs " << events << " local events\n";
+        cout << "[" << get_timestamp() << "] Reduce node " << idx << " performs " << events << " local events\n";
         for (int k = 0; k < events; k++) {
             nodes[idx]->local_event();
         }
@@ -195,6 +206,9 @@ void run_reduce_phase(vector<unique_ptr<node>> &nodes, mt19937 &rng) {
 }
 
 int main(int argc, char *argv[]) {
+    auto start_time = chrono::high_resolution_clock::now();
+    cout << "[" << get_timestamp() << "] Program started\n";
+
     // Command line: --mode=vector|lamport --map=N --reduce=M
     for (int i = 1; i < argc; i++) {
         string arg = argv[i];
@@ -218,6 +232,9 @@ int main(int argc, char *argv[]) {
             nodes.emplace_back(i);
         }
         run_lamport_phase(nodes, rng);
+        auto end_time = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+        cout << "[" << get_timestamp() << "] Program ended. Total execution time: " << duration.count() << " ms\n";
         return 0;
     }
 
@@ -241,9 +258,15 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    cout << "=== FINAL VECTOR CLOCKS ===\n";
+    cout << "[" << get_timestamp() << "] === FINAL VECTOR CLOCKS ===\n";
     for (int i = 0; i < NUM_NODES; i++) {
+        cout << "[" << get_timestamp() << "] ";
         nodes[i]->print_clock();
     }
+
+    auto end_time = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+    cout << "[" << get_timestamp() << "] Program ended. Total execution time: " << duration.count() << " ms\n";
+
     return 0;
 }
