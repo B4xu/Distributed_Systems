@@ -49,7 +49,7 @@ Demonstrate understanding through analysis and extension.
 ### Tasks
 - Question 1: How does vector clock compare to Lamport clock when determining concurrency?
 - Question 2: In this simulation, how does shuffle randomness (map node -> random reduce node) affect event ordering?
-- Question 3: Propose one extension:
+- Question 3: Propose one extension
   - Add failure detection or retry for lost messages
   - Add another phase (e.g., “Finalize”) with additional local events
 - Bonus coding exercise:
