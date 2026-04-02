@@ -154,29 +154,36 @@ struct LamportNode {
     }
 };
 
+string lamport_tag(int lamport_clock) {
+    stringstream ss;
+    ss << "[L:" << lamport_clock << "]";
+    return ss.str();
+}
+
 void run_lamport_phase(vector<LamportNode> &nodes, mt19937 &rng) {
     uniform_int_distribution<int> map_work(1, 4);
     uniform_int_distribution<int> reduce_work(2, 5);
 
-    cout << "[" << get_timestamp() << "] === MAP PHASE (Lamport) ===\n";
+    cout << lamport_tag(0) << " === MAP PHASE (Lamport) ===\n";
     for (int i = 0; i < NUM_MAP_NODES; i++) {
         int events = map_work(rng);
-        cout << "[" << get_timestamp() << "] Map node " << i << " performs " << events << " local events\n";
+        cout << lamport_tag(nodes[i].clock) << " Map node " << i << " performs " << events << " local events\n";
         for (int k = 0; k < events; k++) {
             nodes[i].local_event();
+            cout << lamport_tag(nodes[i].clock) << " [LOCAL] Node " << i << " event -> " << nodes[i].clock << "\n";
         }
     }
 
-    cout << "[" << get_timestamp() << "] === SHUFFLE PHASE (Lamport) ===\n";
+    cout << lamport_tag(0) << " === SHUFFLE PHASE (Lamport) ===\n";
     for (int i = 0; i < NUM_MAP_NODES; i++) {
         int target = (i % NUM_REDUCE_NODES) + NUM_MAP_NODES;
         int timestamp = nodes[i].send();
         nodes[target].receive(timestamp);
-        cout << "[" << get_timestamp() << "] [SEND shuffle] Node " << i << " -> Node " << target << " @" << timestamp << "\n";
-        cout << "[" << get_timestamp() << "] [RECV] Node " << target << " received from Node " << i << "\n";
+        cout << lamport_tag(timestamp) << " [SEND shuffle] Node " << i << " -> Node " << target << " @" << timestamp << "\n";
+        cout << lamport_tag(nodes[target].clock) << " [RECV] Node " << target << " received from Node " << i << " -> " << nodes[target].clock << "\n";
     }
 
-    cout << "[" << get_timestamp() << "] === REDUCE PHASE (Lamport) ===\n";
+    cout << lamport_tag(0) << " === REDUCE PHASE (Lamport) ===\n";
     for (int i = 0; i < NUM_REDUCE_NODES; i++) {
         int idx = NUM_MAP_NODES + i;
         int events = reduce_work(rng);
@@ -186,9 +193,9 @@ void run_lamport_phase(vector<LamportNode> &nodes, mt19937 &rng) {
         }
     }
 
-    cout << "[" << get_timestamp() << "] === FINAL LAMPORT CLOCKS ===\n";
+    cout << lamport_tag(0) << " === FINAL LAMPORT CLOCKS ===\n";
     for (int i = 0; i < NUM_NODES; i++) {
-        cout << "[" << get_timestamp() << "] Node " << i << ": " << nodes[i].clock << "\n";
+        cout << lamport_tag(nodes[i].clock) << " Node " << i << ": " << nodes[i].clock << "\n";
     }
 }
 
