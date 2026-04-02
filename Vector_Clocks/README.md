@@ -1,103 +1,65 @@
-# Vector Clock Simulation in Distributed Systems
+# Vector Clock Simulation in Distributed Systems (Class Assignment)
 
-This C++ program simulates a distributed system using vector clocks to track causality and ordering of events across multiple nodes. It models a simplified MapReduce-like workflow where map nodes process data, shuffle results to reduce nodes, and reduce nodes perform final aggregation.
+This C++ project is designed as a hands-on class assignment with a clear 3-section structure: Concept, Implementation, and Evaluation. Each section includes objectives and concrete tasks that students can complete in one session.
 
-## Overview
+---
 
-In distributed systems, ensuring the correct ordering of events across different processes is crucial. Vector clocks provide a way to determine causality without relying on physical clocks, which may be unsynchronized.
+## Section 1: Concept (Understanding Vector Clocks)
 
-### Key Concepts
+### Objective
+Explain vector clocks and causality in distributed systems.
 
-- **Nodes**: Represent independent processes in a distributed system
-- **Vector Clocks**: Arrays that track the logical time of events across all nodes
-- **Events**: Local computations or message exchanges between nodes
+### Tasks
+- Define:
+  - **Node**: independent process in a distributed system
+  - **Vector Clock**: N-element array that tracks logical time across N nodes
+  - **Happened-before relation**: partial ordering of events
+- State the rules in your own words:
+  - Local event: `VC[i] += 1`
+  - Send event: increment own clock and attach vector clock to message
+  - Receive event: merge incoming vector clock with local, then increment local clock
+- Write a short example (2-3 steps) that shows concurrent vs causal events.
 
-## How It Works
+---
 
-The simulation consists of three phases:
+## Section 2: Implementation (Run & Inspect the Code)
 
-1. **Map Phase**: Map nodes (0-5) perform local events, simulating data processing
-2. **Shuffle Phase**: Map nodes send their results to randomly selected reduce nodes (6-8) via asynchronous message passing
-3. **Reduce Phase**: Reduce nodes process received data and perform additional local events
+### Objective
+Compile and run the vector clock simulation and observe behavior.
 
-Each node runs in its own thread, communicating through thread-safe message queues to simulate real distributed communication with network delays.
+### Tasks
+1. Compile the code:
+   - `g++ -std=c++14 -pthread vector_clock.cpp -o vector_clock`
+2. Run the simulation:
+   - `./vector_clock`
+3. Identify phases in output:
+   - `MAP PHASE`, `SHUFFLE PHASE`, `REDUCE PHASE`
+4. For one map-reduce message, verify:
+   - Sender clock before send
+   - Receiver merges and updates correctly
+5. Record final vector clock values for nodes 0, 3, 6.
 
-## Mathematical Explanation
+---
 
-### Vector Clock Rules
+## Section 3: Evaluation (Assignment Questions)
 
-A vector clock VC is an array of size N (number of nodes), where VC[i] represents the logical clock value for node i.
+### Objective
+Demonstrate understanding through analysis and extension.
 
-**Local Event Rule:**
-```
-VC[i] = VC[i] + 1
-```
+### Tasks
+- Question 1: How does vector clock compare to Lamport clock when determining concurrency?
+- Question 2: In this simulation, how does shuffle randomness (map node -> random reduce node) affect event ordering?
+- Question 3: Propose one extension:
+  - Add failure detection or retry for lost messages
+  - Add another phase (e.g., “Finalize”) with additional local events
+- Bonus coding exercise:
+  - Change number of map nodes from 6 to 4 and reduce nodes from 3 to 2, then rerun and compare final VC outputs.
 
-**Send Message Rule:**
-```
-VC[i] = VC[i] + 1
-Send (VC, message) to receiver j
-```
+---
 
-**Receive Message Rule:**
-```
-For each k: VC[k] = max(VC[k], received_VC[k])
-VC[i] = VC[i] + 1
-```
+## Quick Reference
+- Build: `g++ -std=c++14 -pthread vector_clock.cpp -o vector_clock`
+- Run: `./vector_clock`
 
-### Causality
-
-If VC1 ≤ VC2 (component-wise), then all events represented by VC1 happened before those by VC2. If neither VC1 ≤ VC2 nor VC2 ≤ VC1, the events are concurrent.
-
-## Building and Running
-
-### Prerequisites
-- C++ compiler with C++14 support (e.g., g++ 5+)
-- POSIX threads support
-
-### Compilation
-```bash
-g++ -std=c++14 -pthread vector_clock.cpp -o vector_clock
-```
-
-### Execution
-```bash
-./vector_clock
-```
-
-The program will output the phases of execution, message sends/receives, and final vector clock states for all nodes.
-
-## Sample Output Explanation
-
-```
-=== MAP PHASE ===
-Map node 0 performs 2 local events
-...
-=== SHUFFLE PHASE ===
-[SEND shuffle] Node 0 -> Node 6
-[RECV] Node 6 received from Node 0
-...
-=== REDUCE PHASE ===
-Reduce node 6 performs 3 local events
-...
-=== FINAL VECTOR CLOCKS ===
-Node 0: 3 0 0 0 0 0 0 0 0 0
-Node 6: 1 0 0 0 0 0 4 0 0 0
-```
-
-- Node 0 incremented its clock to 3 (initial + 2 events + 1 send)
-- Node 6 received Node 0's clock (1), merged it, and incremented to 4 (1 + 3 events)
-
-## Extensions
-
-This simulation can be extended with:
-- Fault tolerance (node failures)
-- More complex communication patterns
-- Real network protocols (TCP/UDP)
-- Performance metrics and benchmarking
-
-## References
-
-- Lamport, L. (1978). Time, clocks, and the ordering of events in a distributed system.
-- Fidge, C. J. (1988). Timestamps in message-passing systems that preserve the partial ordering.</content>
+> This structured README is now a class-friendly, 3-section assignment: Concept, Implementation, Evaluation.</content>
 <parameter name="filePath">/home/irakli/Desktop/Distributed_Systems/Vector_Clocks/README.md
