@@ -136,10 +136,8 @@ int main(int argc, char *argv[]) {
 
                 int ts = nodes[sender].send();
                 nodes[receiver].receive(ts);
-                cout << "[" << get_timestamp() << "] [SEND] Node " << sender << " -> Node " << receiver << " (ts=" << ts << ")\n";
             } else {
                 nodes[sender].local_event();
-                cout << "[" << get_timestamp() << "] [LOCAL] Node " << sender << " -> " << nodes[sender].clock << "\n";
             }
 
             this_thread::sleep_for(chrono::milliseconds(60));
@@ -163,12 +161,8 @@ int main(int argc, char *argv[]) {
                 } while (receiver == sender);
 
                 nodes[sender].send(nodes[receiver]);
-                cout << "[" << get_timestamp() << "] [SEND] Node " << sender << " -> Node " << receiver << " (";
-                nodes[sender].print();
             } else {
                 nodes[sender].local_event();
-                cout << "[" << get_timestamp() << "] [LOCAL] Node " << sender << " -> ";
-                nodes[sender].print();
             }
 
             this_thread::sleep_for(chrono::milliseconds(60));
