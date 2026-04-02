@@ -28,18 +28,18 @@ Explain vector clocks and causality in distributed systems.
 Compile and run the vector clock simulation and observe behavior.
 
 ### Tasks
-1. Compile the code:
-   - `g++ -std=c++14 -pthread vector_clock.cpp -o vector_clock`
+1. Compile the generic workload code:
+   - `g++ -std=c++17 -pthread vector_clock_generic.cpp -o vector_clock_generic`
 2. Run the simulation:
-   - Vector mode: `./vector_clock --mode=vector --map=6 --reduce=3`
-   - Lamport mode: `./vector_clock --mode=lamport --map=6 --reduce=3`
-3. Identify phases in output:
-   - Vector: `MAP PHASE`, `SHUFFLE PHASE`, `REDUCE PHASE`
-   - Lamport: `MAP PHASE (Lamport)`, `SHUFFLE PHASE (Lamport)`, `REDUCE PHASE (Lamport)`
-4. For one map-reduce message, verify:
-   - Sender clock before send
-   - Receiver merges and updates correctly
-5. Record final vector clock values for nodes 0, 3, 6.
+   - Vector mode: `./vector_clock_generic --mode=vector --nodes=8 --steps=30 --send-chance=40`
+   - Lamport mode: `./vector_clock_generic --mode=lamport --nodes=8 --steps=30 --send-chance=40`
+3. Identify event types in output:
+   - `[LOCAL]` for local node updates
+   - `[SEND]` for message exchanges and receivers processing
+4. For one send event, verify:
+   - Sender clock increments before send
+   - Receiver merges sender clock and then increments local clock
+5. Record final clock values for nodes 0, 3, 6.
 
 ---
 
@@ -60,8 +60,16 @@ Demonstrate understanding through analysis and extension.
 ---
 
 ## Quick Reference
-- Build: `g++ -std=c++14 -pthread vector_clock.cpp -o vector_clock`
-- Run: `./vector_clock`
+- Build map-reduce variant: `g++ -std=c++14 -pthread vector_clock.cpp -o vector_clock`
+- Run map-reduce variant: `./vector_clock --mode=vector --map=6 --reduce=3`
+
+## Generic Event Workload Variant (Recommended for Causality Testing)
+The generic event implementation is in `vector_clock_generic.cpp`.
+- Build: `g++ -std=c++17 -pthread vector_clock_generic.cpp -o vector_clock_generic`
+- Run vector clock mode: `./vector_clock_generic --mode=vector --nodes=8 --steps=30 --send-chance=40`
+- Run Lamport mode: `./vector_clock_generic --mode=lamport --nodes=8 --steps=30 --send-chance=40`
+
+For reproducibility add `--seed=<integer>` (not currently implemented, but can be added as an extension).
 
 > This structured README is now a class-friendly, 3-section assignment: Concept, Implementation, Evaluation.</content>
 <parameter name="filePath">/home/irakli/Desktop/Distributed_Systems/Vector_Clocks/README.md
