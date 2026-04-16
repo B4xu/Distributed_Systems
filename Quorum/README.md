@@ -1,8 +1,22 @@
-# 🧪 Lab: Quorum-Based Consistency (3 Tasks)
+# 🧪 Lab: Quorum & Eventual Consistency Simulation (3 Points)
 
 ## 🎯 Objective
 
-In this lab, you will build a simple simulation of a distributed system with 3 replicas and explore how quorum-based reads and writes affect consistency.
+In this lab, you will simulate a distributed system with:
+
+- Replicated nodes
+- Quorum-based reads and writes
+- Version tracking
+- Delayed replication (eventual consistency)
+
+---
+
+## 🧠 Concepts Covered
+
+- Quorum systems (`N`, `R`, `W`)
+- Stale reads
+- Versioning
+- Eventual consistency
 
 ---
 
@@ -10,105 +24,72 @@ In this lab, you will build a simple simulation of a distributed system with 3 r
 
 ---
 
-## 🔹 Task 1 — Replica Setup (1 Point)
+## 🔹 Task 1 — Replica Model (1 Point)
 
-### Goal
-Create a basic replicated system.
+Create a `Replica` class with:
 
-### Requirements
+- `name`
+- `value`
+- `version`
 
-- Create **3 replicas**:
-  - `A`, `B`, `C`
-- Each replica must store an **integer value**
-- Initialize all values to `0`
-- Print the current state of replicas
-
-### Example Output
-A: 0
-B: 0
-C: 0
+Methods:
+- `write(value, version)`
+- `read()`
+- `reset()`
 
 ---
 
-## 🔹 Task 2 — Implement Read & Write (1 Point)
+## 🔹 Task 2 — Quorum Operations (1 Point)
 
-### Goal
-Implement quorum-based operations.
+Create a `DistributedSystem` class that:
 
-### Requirements
+Implements:
 
-### 1. `write(value, W)`
-- Randomly select `W` replicas
-- Update selected replicas with the given value
-- Print:
-  - value written
-  - replicas updated
+- `write(value, W)`
+- `read(R)`
+- `show_state()`
 
-### Example
-Read from ['B'] -> [0]
+Requirements:
 
----
-
-## 🔹 Task 3 — Run Experiments & Analyze (1 Point)
-
-  ### Goal
-  Test different quorum configurations and observe behavior.
+- Use **3 replicas**
+- Randomly select replicas
+- Increment version on each write
+- Read must return the **latest version**
 
 ---
 
-### Case 1: Weak Quorum
+## 🔹 Task 3 — Eventual Consistency Experiment (1 Point)
+
+Modify your system:
+
+- Write to **only 1 replica first**
+- Delay updates to other replicas
+
+Simulate:
+
+### Case 1:
 
 W = 1, R = 1
 
 
+### Case 2:
 
-- Perform a write
-- Perform a read
-
----
-
-### Case 2: Stronger Quorum
 W = 2, R = 2
 
 
-- Perform a write
-- Perform a read
-
 ---
 
-### For EACH case, print:
-
-- Read result
-- Whether result is:
-  - ✅ Up-to-date
-  - ❌ Stale
-- Final state of all replicas
-- Values of:
-  - `N` (number of replicas)
-  - `W`, `R`
-  - `R + W`
-
----
-
-### Check quorum rule:
-R + W > N
-
+### For EACH case:
 
 Print:
 
-- `"Quorum satisfied"` if true
-- `"Quorum NOT satisfied"` if false
-
----
-
-## 🧠 Expected Understanding
-
-After completing this lab, you should understand:
-
-- Weak quorum (`W=1, R=1`) can produce stale reads
-- Stronger quorum (`W=2, R=2`) improves consistency
-- Why overlapping reads and writes matters
-- How quorum systems reduce inconsistency
+- replicas written to
+- replicas read from
+- responses (value + version)
+- final chosen result
+- whether result is:
+  - ✅ Up-to-date
+  - ❌ Stale
 
 ---
 
@@ -116,16 +97,17 @@ After completing this lab, you should understand:
 
 Submit:
 
-- Your Python file
-- A short explanation answering:
+1. Your Python file
+2. Short answers:
 
-1. What happened in Case 1?
-2. What happened in Case 2?
-3. When did a stale read occur?
-4. Was `R + W > N` satisfied in each case?
+- Why do stale reads happen?
+- How does delayed replication affect consistency?
+- Why is `W=2, R=2` safer than `W=1, R=1`?
 
 ---
 
-## ⭐ Key Idea
-Weak quorum → faster but inconsistent
-Strong quorum → slower but more consistent
+## 💡 Key Idea
+Eventual consistency = delayed updates
+Quorum = overlap between reads and writes
+Together they control correctness vs speed
+
